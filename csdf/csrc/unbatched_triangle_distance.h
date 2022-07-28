@@ -9,6 +9,7 @@ void unbatched_triangle_distance_forward_cuda(
     at::Tensor points,
     at::Tensor face_vertices,
     at::Tensor dist,
+    at::Tensor normal,
     at::Tensor dist_sign,
     at::Tensor face_idx,
     at::Tensor dist_type);

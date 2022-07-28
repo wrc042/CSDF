@@ -10,6 +10,7 @@ void unbatched_triangle_distance_forward_cuda_impl(
     at::Tensor points,
     at::Tensor face_vertices,
     at::Tensor dist,
+    at::Tensor normal,
     at::Tensor dist_sign,
     at::Tensor face_idx,
     at::Tensor dist_type);
@@ -29,18 +30,21 @@ void unbatched_triangle_distance_forward_cuda(
     at::Tensor points,
     at::Tensor face_vertices,
     at::Tensor dist,
+    at::Tensor normal,
     at::Tensor dist_sign,
     at::Tensor face_idx,
     at::Tensor dist_type) {
   CHECK_CUDA(points);
   CHECK_CUDA(face_vertices);
   CHECK_CUDA(dist);
+  CHECK_CUDA(normal);
   CHECK_CUDA(dist_sign);
   CHECK_CUDA(face_idx);
   CHECK_CUDA(dist_type);
   CHECK_CONTIGUOUS(points);
   CHECK_CONTIGUOUS(face_vertices);
   CHECK_CONTIGUOUS(dist);
+  CHECK_CONTIGUOUS(normal);
   CHECK_CONTIGUOUS(dist_sign);
   CHECK_CONTIGUOUS(face_idx);
   CHECK_CONTIGUOUS(dist_type);
@@ -48,13 +52,14 @@ void unbatched_triangle_distance_forward_cuda(
   const int num_faces = face_vertices.size(0);
   CHECK_SIZES(points, num_points, 3);
   CHECK_SIZES(face_vertices, num_faces, 3, 3);
+  CHECK_SIZES(normal, num_points, 3);
   CHECK_SIZES(dist, num_points);
   CHECK_SIZES(dist_sign, num_points);
   CHECK_SIZES(face_idx, num_points);
   CHECK_SIZES(dist_type, num_points);
 #if WITH_CUDA
   unbatched_triangle_distance_forward_cuda_impl(
-      points, face_vertices, dist, dist_sign, face_idx, dist_type);
+      points, face_vertices, dist, normal, dist_sign, face_idx, dist_type);
 #else
   AT_ERROR("unbatched_triangle_distance not built with CUDA");
 #endif

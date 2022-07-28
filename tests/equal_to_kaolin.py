@@ -32,13 +32,17 @@ for mesh in os.listdir("meshes"):
     g = torch.autograd.grad([dis.sum()], [x], create_graph=True,
                             retain_graph=True)[0]
 
-    dis_, dis_sign, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
+    dis_, normal, dis_sign, dis_faces, dis_types = csdf.compute_sdf(
+        x, face_verts_)
     if mesh != "suzanne.obj":
         if not torch.allclose(signs, dis_sign):
             print("wrong in sign")
             exit(0)
+    g__ = 2 * dis_.unsqueeze(1).sqrt() * normal
     g_ = torch.autograd.grad([dis_.sum()], [x], create_graph=True,
                              retain_graph=True)[0]
+    if not torch.allclose(g_, g__, atol=2e-7):
+        print("bug in normal")
     if not torch.allclose(g, g_, atol=2e-7):
         # for i in range(g.shape[0]):
         #     if not torch.allclose(g[i], g_[i]):
@@ -61,9 +65,13 @@ for mesh in os.listdir("meshes"):
     g = torch.autograd.grad([dis.sum()], [x], create_graph=True,
                             retain_graph=True)[0]
 
-    dis_, dis_sign, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
+    dis_, normal, dis_sign, dis_faces, dis_types = csdf.compute_sdf(
+        x, face_verts_)
+    g__ = 2 * dis_.unsqueeze(1).sqrt() * normal
     g_ = torch.autograd.grad([dis_.sum()], [x], create_graph=True,
                              retain_graph=True)[0]
+    if not torch.allclose(g_, g__, atol=2e-7):
+        print("bug in normal")
     if mesh != "suzanne.obj":
         if not torch.allclose(signs, dis_sign):
             print("wrong in sign")

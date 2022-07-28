@@ -204,6 +204,7 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
     int num_points,
     int num_faces,
     scalar_t* out_dist,
+    vector_t* out_normal,
     int* out_dist_sign,
     int64_t* out_closest_face_idx,
     int* out_dist_type) {
@@ -221,6 +222,7 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
       int best_face_idx = 0;
       int best_dist_type = 0;
       int best_dist_sign = 0;
+      vector_t best_normal;
       scalar_t best_dist = INFINITY;
       for (int sub_face_idx = 0; sub_face_idx < num_faces_iter; sub_face_idx++) {
         vector_t closest_point;
@@ -264,9 +266,11 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
           }
         }
         vector_t dist_vec = p - closest_point;
+        vector_t grad_normal = dist_vec *rsqrt(dot(dist_vec, dist_vec));
         int dist_sign = (dot(dist_vec, normal)>=0)?1:-1;
         float dist = dot(dist_vec, dist_vec);
         if (sub_face_idx == 0 || best_dist > dist) {
+          best_normal = grad_normal;
           best_dist = dist;
           best_dist_sign = dist_sign;
           best_dist_type = dist_type;
@@ -274,6 +278,7 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
         }
       }
       if (start_face_idx == 0 || out_dist[point_idx] > best_dist) {
+        out_normal[point_idx] = best_normal;
         out_dist[point_idx] = best_dist;
         out_dist_sign[point_idx] = best_dist_sign;
         out_closest_face_idx[point_idx] = best_face_idx;
@@ -351,6 +356,7 @@ void unbatched_triangle_distance_forward_cuda_impl(
     at::Tensor points,
     at::Tensor face_vertices,
     at::Tensor dist,
+    at::Tensor normal,
     at::Tensor dist_sign,
     at::Tensor face_idx,
     at::Tensor dist_type) {
@@ -369,6 +375,7 @@ void unbatched_triangle_distance_forward_cuda_impl(
         points.size(0),
         face_vertices.size(0),
         dist.data_ptr<scalar_t>(),
+        reinterpret_cast<vector_t*>(normal.data_ptr<scalar_t>()),
         dist_sign.data_ptr<int32_t>(),
         face_idx.data_ptr<int64_t>(),
         dist_type.data_ptr<int32_t>());
