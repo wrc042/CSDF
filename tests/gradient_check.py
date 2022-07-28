@@ -20,6 +20,11 @@ for mesh in os.listdir("meshes"):
 
     x = torch.Tensor(samples).to(device).requires_grad_().double()
     x = x*1.01
-    inputs = (x,face_verts)
-    test = gradcheck(csdf.compute_sdf,inputs)
+    inputs = (x, face_verts)
+    test = gradcheck(csdf.compute_sdf, inputs)
+    print(test)
+    x = torch.Tensor(samples).to(device).requires_grad_().double()
+    x = x/1.01
+    inputs = (x, face_verts)
+    test = gradcheck(csdf.compute_sdf, inputs)
     print(test)
