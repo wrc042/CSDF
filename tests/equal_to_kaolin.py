@@ -12,7 +12,7 @@ device = "cuda"
 for mesh in os.listdir("meshes"):
     test_mesh = trimesh.load(os.path.join(
         "meshes", mesh), force="mesh", process=False)
-    samples, _ = trimesh.sample.sample_surface(test_mesh, 10000)
+    samples, _ = trimesh.sample.sample_surface(test_mesh, 100)
     verts = torch.Tensor(test_mesh.vertices.copy()).to(device).unsqueeze(0)
     verts_ = torch.Tensor(test_mesh.vertices.copy()).to(device)
     faces = torch.Tensor(test_mesh.faces.copy()).long().to(device)
@@ -26,10 +26,17 @@ for mesh in os.listdir("meshes"):
     x = x*1.01
     dis, dis_faces, dis_types = kaolin.metrics.trianglemesh.point_to_mesh_distance(
         x.unsqueeze(0), face_verts)
+    signs_ = kaolin.ops.mesh.check_sign(verts, faces, x.unsqueeze(0))
+    signs = torch.where(signs_, -torch.ones_like(
+        signs_).int(), torch.ones_like(signs_).int())
     g = torch.autograd.grad([dis.sum()], [x], create_graph=True,
                             retain_graph=True)[0]
 
-    dis_, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
+    dis_, dis_sign, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
+    if mesh != "suzanne.obj":
+        if not torch.allclose(signs, dis_sign):
+            print("wrong in sign")
+            exit(0)
     g_ = torch.autograd.grad([dis_.sum()], [x], create_graph=True,
                              retain_graph=True)[0]
     if not torch.allclose(g, g_, atol=2e-7):
@@ -48,12 +55,19 @@ for mesh in os.listdir("meshes"):
     x = x/1.01
     dis, dis_faces, dis_types = kaolin.metrics.trianglemesh.point_to_mesh_distance(
         x.unsqueeze(0), face_verts)
+    signs_ = kaolin.ops.mesh.check_sign(verts, faces, x.unsqueeze(0))
+    signs = torch.where(signs_, -torch.ones_like(
+        signs_).int(), torch.ones_like(signs_).int())
     g = torch.autograd.grad([dis.sum()], [x], create_graph=True,
                             retain_graph=True)[0]
 
-    dis_, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
+    dis_, dis_sign, dis_faces, dis_types = csdf.compute_sdf(x, face_verts_)
     g_ = torch.autograd.grad([dis_.sum()], [x], create_graph=True,
                              retain_graph=True)[0]
+    if mesh != "suzanne.obj":
+        if not torch.allclose(signs, dis_sign):
+            print("wrong in sign")
+            exit(0)
     if not torch.allclose(g, g_, atol=2e-7):
         # for i in range(g.shape[0]):
         #     if not torch.allclose(g[i], g_[i]):
