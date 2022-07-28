@@ -1,5 +1,3 @@
-from concurrent.futures import process
-from tkinter.tix import Tree
 import trimesh
 import kaolin
 from csdf import index_vertices_by_faces
