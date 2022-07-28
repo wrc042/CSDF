@@ -176,8 +176,6 @@ template<typename scalar_t, typename vector_t>
 __device__ __forceinline__ void compute_edge_backward(
     vector_t vab,
     vector_t pb,
-    scalar_t* grad_input_va,
-    scalar_t* grad_input_vb,
     scalar_t* grad_input_p,
     int64_t index,
     scalar_t grad) {
@@ -215,20 +213,9 @@ __device__ __forceinline__ void compute_edge_backward(
 
   vector_t vab_bar = ((dm_dvab * m_bar) + (dl_dvab * l_bar)) + di_dvab;  // horizontal vector
 
-  vector_t va_bar = vab_bar;
-  vector_t vb_bar = make_vector(-vab_bar.x - pb_bar.x, -vab_bar.y - pb_bar.y, -vab_bar.z - pb_bar.z);
-
   grad_input_p[index * 3] = p_bar.x;
   grad_input_p[index * 3 + 1] = p_bar.y;
   grad_input_p[index * 3 + 2] = p_bar.z;
-
-  atomicAdd(&(grad_input_va[0]), va_bar.x);
-  atomicAdd(&(grad_input_va[1]), va_bar.y);
-  atomicAdd(&(grad_input_va[2]), va_bar.z);
-
-  atomicAdd(&(grad_input_vb[0]), vb_bar.x);
-  atomicAdd(&(grad_input_vb[1]), vb_bar.y);
-  atomicAdd(&(grad_input_vb[2]), vb_bar.z);
 }
 
 
@@ -251,7 +238,7 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
     }
     __syncthreads();
     for (int point_idx = threadIdx.x + blockDim.x * blockIdx.x; point_idx < num_points;
-         point_idx += blockDim.x * gridDim.x) {
+         point_idx += blockDim.x) {
       vector_t p = points[point_idx];
       int best_face_idx = 0;
       int best_dist_type = 0;
@@ -324,10 +311,9 @@ __global__ void unbatched_triangle_distance_backward_cuda_kernel(
     int* dist_type,
     int num_points,
     int num_faces,
-    scalar_t* grad_points,
-    scalar_t* grad_face_vertices) {
+    scalar_t* grad_points) {
   for (int point_id = threadIdx.x + blockIdx.x * blockDim.x; point_id < num_points;
-       point_id += blockDim.x * gridDim.x) {
+       point_id += blockDim.x) {
     int type = dist_type[point_id];
     int64_t face_id = closest_face_idx[point_id];
     vector_t p = points[point_id];
@@ -361,53 +347,29 @@ __global__ void unbatched_triangle_distance_backward_cuda_kernel(
       grad_points[point_id * 3 + 1] = grad_point_vec.y;
       grad_points[point_id * 3 + 2] = grad_point_vec.z;
       vector_t tmp = grad_e31 + grad_e21 - grad_point_vec;
-      atomicAdd(&(grad_face_vertices[face_id * 9]), tmp.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 1]), tmp.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 2]), tmp.z);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 3]), -grad_e21.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 4]), -grad_e21.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 5]), -grad_e21.z);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 6]), -grad_e31.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 7]), -grad_e31.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 8]), -grad_e31.z);
     } else if (type == 1) {  // distance to v1
       vector_t grad_dist_vec = (p - v1) * grad_out;
-      atomicAdd(&(grad_face_vertices[face_id * 9]), -grad_dist_vec.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 1]), -grad_dist_vec.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 2]), -grad_dist_vec.z);
       grad_points[point_id * 3] = grad_dist_vec.x;
       grad_points[point_id * 3 + 1] = grad_dist_vec.y;
       grad_points[point_id * 3 + 2] = grad_dist_vec.z;
     } else if (type == 2) {  // distance to v2
       vector_t grad_dist_vec = (p - v2) * grad_out;
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 3]), -grad_dist_vec.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 4]), -grad_dist_vec.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 5]), -grad_dist_vec.z);
       grad_points[point_id * 3] = grad_dist_vec.x;
       grad_points[point_id * 3 + 1] = grad_dist_vec.y;
       grad_points[point_id * 3 + 2] = grad_dist_vec.z;
     } else if (type == 3) {  // distance to v3
       vector_t grad_dist_vec = (p - v3) * grad_out;
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 6]), -grad_dist_vec.x);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 7]), -grad_dist_vec.y);
-      atomicAdd(&(grad_face_vertices[face_id * 9 + 8]), -grad_dist_vec.z);
       grad_points[point_id * 3] = grad_dist_vec.x;
       grad_points[point_id * 3 + 1] = grad_dist_vec.y;
       grad_points[point_id * 3 + 2] = grad_dist_vec.z;
     } else if (type == 4) {  // distance to e12
       compute_edge_backward(e12, p - v1,
-                            &(grad_face_vertices[face_id * 9 + 3]),
-                            &(grad_face_vertices[face_id * 9]),
                             grad_points, point_id, grad_out);
     } else if (type == 5) {  // distance to e23
       compute_edge_backward(e23, p - v2,
-                            &(grad_face_vertices[face_id * 9 + 6]),
-                            &(grad_face_vertices[face_id * 9 + 3]),
                             grad_points, point_id, grad_out);
     } else {  // distance to e31
       compute_edge_backward(e31, p - v3,
-                            &(grad_face_vertices[face_id * 9]),
-                            &(grad_face_vertices[face_id * 9 + 6]),
                             grad_points, point_id, grad_out);
     }
   }
@@ -447,8 +409,7 @@ void unbatched_triangle_distance_backward_cuda_impl(
     at::Tensor face_vertices,
     at::Tensor face_idx,
     at::Tensor dist_type,
-    at::Tensor grad_points,
-    at::Tensor grad_face_vertices) {
+    at::Tensor grad_points) {
 
   DISPATCH_INPUT_TYPES(points.scalar_type(), scalar_t,
                        "unbatched_triangle_distance_backward_cuda", [&] {
@@ -466,8 +427,7 @@ void unbatched_triangle_distance_backward_cuda_impl(
         dist_type.data_ptr<int32_t>(),
         points.size(0),
         face_vertices.size(0),
-        grad_points.data_ptr<scalar_t>(),
-        grad_face_vertices.data_ptr<scalar_t>());
+        grad_points.data_ptr<scalar_t>());
     CUDA_CHECK(cudaGetLastError());
   });
 }

@@ -35,6 +35,7 @@ def compute_sdf(pointclouds, face_vertices):
 class _UnbatchedTriangleDistanceCuda(torch.autograd.Function):
     @staticmethod
     def forward(ctx, points, face_vertices):
+        assert not face_vertices.requires_grad, "not support face_vertices gradient"
         num_points = points.shape[0]
         num_faces = face_vertices.shape[0]
         min_dist = torch.zeros(
@@ -55,8 +56,8 @@ class _UnbatchedTriangleDistanceCuda(torch.autograd.Function):
         points, face_vertices, face_idx, dist_type = ctx.saved_tensors
         grad_dist = grad_dist.contiguous()
         grad_points = torch.zeros_like(points)
-        grad_face_vertices = torch.zeros_like(face_vertices)
+        grad_face_vertices = None
         _C.unbatched_triangle_distance_backward_cuda(
             grad_dist, points, face_vertices, face_idx, dist_type,
-            grad_points, grad_face_vertices)
+            grad_points)
         return grad_points, grad_face_vertices
