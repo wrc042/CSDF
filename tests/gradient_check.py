@@ -13,7 +13,7 @@ device = "cuda"
 for mesh in os.listdir("meshes"):
     test_mesh = trimesh.load(os.path.join(
         "meshes", mesh), force="mesh", process=False)
-    samples, _ = trimesh.sample.sample_surface(test_mesh, 100)
+    samples, _ = trimesh.sample.sample_surface(test_mesh, 1000)
     verts = torch.Tensor(test_mesh.vertices.copy()).to(device)
     faces = torch.Tensor(test_mesh.faces.copy()).long().to(device)
     face_verts = index_vertices_by_faces(verts, faces).double()
