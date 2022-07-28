@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef KAOLIN_UTILS_H_
-#define KAOLIN_UTILS_H_
+#ifndef CSDF_UTILS_H_
+#define CSDF_UTILS_H_
 
 #include <ATen/ATen.h>
 #include <typeinfo>
@@ -96,4 +96,4 @@
     } \
   }()
 
-#endif  // KAOLIN_UTILS_H_
+#endif  // CSDF_UTILS_H_

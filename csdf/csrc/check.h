@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef KAOLIN_CHECK_H_
-#define KAOLIN_CHECK_H_
+#ifndef CSDF_CHECK_H_
+#define CSDF_CHECK_H_
 
 #include <ATen/native/TypeProperties.h>
 #include <ATen/TensorGeometry.h>
@@ -39,8 +39,8 @@
   TORCH_CHECK(x.sizes() == std::vector<int64_t>({__VA_ARGS__}), \
       #x " must of size {" #__VA_ARGS__ "}")
 
-#define KAOLIN_NO_CUDA_ERROR(func_name)                       \
-  AT_ERROR("In ", func_name, ": Kaolin built without CUDA, "  \
+#define CSDF_NO_CUDA_ERROR(func_name)                       \
+  AT_ERROR("In ", func_name, ": csdf built without CUDA, "  \
            "cannot run with GPU tensors")
 
-#endif  // KAOLIN_CHECK_H_
+#endif  // CSDF_CHECK_H_

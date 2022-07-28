@@ -79,13 +79,13 @@ def get_extensions():
     extra_compile_args = {'cxx': ['-O3']}
     define_macros = []
     include_dirs = []
-    sources = glob.glob('csdf/csrc/**/*.cpp', recursive=True)
+    sources = glob.glob('csdf/csrc/*.cpp', recursive=True)
     # FORCE_CUDA is for cross-compilation in docker build
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
         with_cuda = True
         define_macros += [("WITH_CUDA", None),
                           ("THRUST_IGNORE_CUB_VERSION_CHECK", None)]
-        sources += glob.glob('csdf/csrc/**/*.cu', recursive=True)
+        sources += glob.glob('csdf/csrc/*.cu', recursive=True)
         extension = CUDAExtension
         extra_compile_args.update({'nvcc': [
             '-O3',

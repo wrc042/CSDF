@@ -19,7 +19,7 @@
 #include <c10/cuda/CUDAGuard.h>
 #include <THC/THCAtomics.cuh>
 
-#include "../utils.h"
+#include "utils.h"
 
 #define PRIVATE_CASE_TYPE_AND_VAL(ENUM_TYPE, TYPE, TYPE_NAME, VAL, ...) \
   case ENUM_TYPE: { \
@@ -40,7 +40,7 @@
     } \
   }()
 
-namespace kaolin {
+namespace csdf {
 
 template<typename T>
 struct ScalarTypeToVec3 { using type = void; };
@@ -472,7 +472,7 @@ void unbatched_triangle_distance_backward_cuda_impl(
   });
 }
 
-}  // namespace kaolin
+}  // namespace csdf
 
 #undef PRIVATE_CASE_TYPE_AND_VAL
 #undef DISPATCH_INPUT_TYPES
