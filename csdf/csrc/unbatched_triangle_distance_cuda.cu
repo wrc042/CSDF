@@ -217,7 +217,7 @@ __global__ void unbatched_triangle_distance_forward_cuda_kernel(
     }
     __syncthreads();
     for (int point_idx = threadIdx.x + blockDim.x * blockIdx.x; point_idx < num_points;
-         point_idx += blockDim.x) {
+         point_idx += blockDim.x * gridDim.x) {
       vector_t p = points[point_idx];
       int best_face_idx = 0;
       int best_dist_type = 0;
@@ -300,7 +300,7 @@ __global__ void unbatched_triangle_distance_backward_cuda_kernel(
     int num_faces,
     scalar_t* grad_points) {
   for (int point_id = threadIdx.x + blockIdx.x * blockDim.x; point_id < num_points;
-       point_id += blockDim.x) {
+       point_id += blockDim.x * gridDim.x) {
     int type = dist_type[point_id];
     int64_t face_id = closest_face_idx[point_id];
     vector_t p = points[point_id];
