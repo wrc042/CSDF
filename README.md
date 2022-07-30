@@ -8,6 +8,14 @@ This is my custom signed distance(SDF) computation of points to manifold mesh wi
 python setup.py install
 ```
 
+If encounter `circular import`, try:
+
+```bash
+pip install -e .
+```
+
+or manually modify `csdf/__init__.py`.
+
 ## Usage
 
 The code provide two function:
